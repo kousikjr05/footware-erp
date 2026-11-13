@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? '' : 'https://footware-erp.onrender.com');
 const BASE = `${API_URL}/api`;
 
 async function request(method, path, body) {
