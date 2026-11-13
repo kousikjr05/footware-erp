@@ -7,7 +7,14 @@ const inventoryRouter = require('./routes/inventory');
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
+  credentials: true,
+}));
 app.use(express.json());
 
 // Routes
