@@ -59,7 +59,9 @@ class DBWrapper {
       const data = this._db.export();
       const buffer = Buffer.from(data);
       fs.writeFileSync(DB_PATH, buffer);
-    } catch(e) { /* ignore save errors */ }
+    } catch(e) { 
+      console.warn('DB save skipped (read-only filesystem):', e.message);
+    }
   }
 }
 

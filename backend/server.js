@@ -5,17 +5,22 @@ const accountsRouter = require('./routes/accounts');
 const inventoryRouter = require('./routes/inventory');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL
-  ].filter(Boolean),
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    // Allow all origins in production for now
+    callback(null, true);
+  },
   credentials: true,
 }));
 app.use(express.json());
+
+// Health check
+app.get('/', (req, res) => res.json({ status: 'ok', message: 'Footwear ERP Backend is running' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Routes
 app.use('/api/accounts', accountsRouter);
@@ -23,11 +28,22 @@ app.use('/api/inventory', inventoryRouter);
 
 // Auth
 app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.body;
-  const db = getDB();
-  const user = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?').get(username, password);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-  res.json({ user: { id: user.id, username: user.username, name: user.name, role: user.role } });
+  try {
+    const { username, password } = req.body;
+    console.log('Login attempt:', { username, hasPassword: !!password });
+    const db = getDB();
+    if (!db) return res.status(500).json({ error: 'Database not ready' });
+    const user = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?').get(username, password);
+    if (!user) {
+      console.log('Login failed for:', username);
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    console.log('Login success for:', username);
+    res.json({ user: { id: user.id, username: user.username, name: user.name, role: user.role } });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Server error during login' });
+  }
 });
 
 app.get('/api/dashboard/stats', (req, res) => {
